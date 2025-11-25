@@ -72,6 +72,9 @@ class SuperLogConfig {
   /// Mirror each log entry to debug console output (default true)
   final bool mirrorLogsToConsole;
 
+  /// Enable long-press on bubble to export logs to clipboard (default true)
+  final bool enableLongBubbleClickExport;
+
   /// Default log level filter (null = show all)
   final LogLevel? defaultLogLevelFilter;
 
@@ -97,14 +100,14 @@ class SuperLogConfig {
     this.enableLogDeletion = true,
     this.enableLogExport = true,
     this.mirrorLogsToConsole = true,
+    this.enableLongBubbleClickExport = true,
     this.defaultLogLevelFilter,
   });
 
-  /// Creates a disabled configuration.
+  /// Creates a configuration for production environment.
   ///
-  /// When this constructor is used, the logger and debug overlay are completely disabled.
-  /// This is useful for production builds where you want to strip out the debug tools.
-  const SuperLogConfig.disabled()
+  /// This disables the logger completely to avoid any performance impact.
+  const SuperLogConfig.production()
     : enabled = false,
       maxLogs = 0,
       showOverlayBubble = false,
@@ -126,5 +129,64 @@ class SuperLogConfig {
       enableLogDeletion = true,
       enableLogExport = true,
       mirrorLogsToConsole = true,
+      enableLongBubbleClickExport = true,
       defaultLogLevelFilter = null;
+
+  /// Creates a configuration for development environment.
+  ///
+  /// This enables all features with default settings.
+  const SuperLogConfig.development()
+    : enabled = true,
+      maxLogs = 1000,
+      showOverlayBubble = true,
+      autoDetectErrorLevel = true,
+      captureDebugPrint = true,
+      capturePrint = true,
+      bubbleSize = 56.0,
+      initialBubblePosition = const Offset(16.0, 100.0),
+      bubbleColor = const Color(0xCCFF0000),
+      bubbleIconColor = Colors.white,
+      errorBadgeColor = Colors.red,
+      errorBadgeTextColor = Colors.white,
+      enableBubbleDrag = true,
+      hideBubbleWhenScreenOpen = true,
+      panelHeightFraction = 0.9,
+      dimOverlayBackground = true,
+      enableLogFiltering = true,
+      enableLogSearch = true,
+      enableLogDeletion = true,
+      enableLogExport = true,
+      mirrorLogsToConsole = true,
+      enableLongBubbleClickExport = true,
+      defaultLogLevelFilter = null;
+
+  /// Creates a configuration for error tracking only.
+  ///
+  /// This enables the logger but hides the overlay bubble.
+  /// Useful if you want to capture errors silently and maybe export them later,
+  /// or just have them available if you programmatically show the screen.
+  const SuperLogConfig.errorTracking()
+    : enabled = true,
+      maxLogs = 500,
+      showOverlayBubble = false,
+      autoDetectErrorLevel = true,
+      captureDebugPrint = false,
+      capturePrint = false,
+      bubbleSize = 56.0,
+      initialBubblePosition = const Offset(16.0, 100.0),
+      bubbleColor = const Color(0xCCFF0000),
+      bubbleIconColor = Colors.white,
+      errorBadgeColor = Colors.red,
+      errorBadgeTextColor = Colors.white,
+      enableBubbleDrag = true,
+      hideBubbleWhenScreenOpen = true,
+      panelHeightFraction = 0.9,
+      dimOverlayBackground = true,
+      enableLogFiltering = true,
+      enableLogSearch = true,
+      enableLogDeletion = true,
+      enableLogExport = true,
+      mirrorLogsToConsole = true,
+      enableLongBubbleClickExport = true,
+      defaultLogLevelFilter = LogLevel.error;
 }

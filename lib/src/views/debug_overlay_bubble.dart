@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../controllers/super_log_manager.dart';
 import '../models/log_config.dart';
 
@@ -134,6 +135,61 @@ class _SuperDebugOverlayBubbleState extends State<SuperDebugOverlayBubble> {
     widget.onShowLogScreen();
   }
 
+  Future<void> _onLongPress() async {
+    if (_isDragging) return;
+    if (!_config.enableLongBubbleClickExport) return;
+
+    final logs = _logManager.logs;
+    if (logs.isEmpty) return;
+
+    final text = logs
+        .map(
+          (l) => '${l.timestamp} - ${l.level.name.toUpperCase()}: ${l.message}',
+        )
+        .join('\n\n');
+
+    await Clipboard.setData(ClipboardData(text: text));
+
+    // Show a simple feedback since we are in an overlay
+    // We can't easily use SnackBar here without a Scaffold context in the overlay
+    // So we'll use a temporary overlay entry for feedback
+    if (mounted) {
+      _showToast(context, 'Logs exported to clipboard');
+    }
+  }
+
+  void _showToast(BuildContext context, String message) {
+    final overlay = Overlay.of(context);
+    final entry = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: 50,
+        left: 0,
+        right: 0,
+        child: Center(
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.black.withAlpha(204),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                message,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 2), () {
+      entry.remove();
+    });
+  }
+
   @override
   void dispose() {
     _logManager.removeListener(_updateErrorCount);
@@ -160,6 +216,7 @@ class _SuperDebugOverlayBubbleState extends State<SuperDebugOverlayBubble> {
               onPanUpdate: config.enableBubbleDrag ? _onPanUpdate : null,
               onPanEnd: config.enableBubbleDrag ? _onPanEnd : null,
               onTap: _onTap,
+              onLongPress: _onLongPress,
               child: Material(
                 color: Colors.transparent,
                 elevation: 8,

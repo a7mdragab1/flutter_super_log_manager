@@ -13,7 +13,7 @@
 
 _🚀 Automatic error catching • 🎯 Draggable debug bubble • 📱 Advanced log viewer • ⚡ Performance optimized_
 
-![Debug Bubble](screenshots/shot1.png)
+<img src="screenshots/shot1.png" width="30%" /> <img src="screenshots/shot2.png" width="30%" /> <img src="screenshots/shot3.png" width="30%" />
 
 </div>
 
@@ -58,6 +58,42 @@ _🚀 Automatic error catching • 🎯 Draggable debug bubble • 📱 Advanced
 
 ## 📖 Usage Examples
 
+### Minimal Usage
+
+Easily toggle the logger for production builds using a constant or environment variable:
+
+```dart
+import 'package:flutter/foundation.dart';
+import 'package:flutter_super_log_manager/flutter_super_log_manager.dart';
+
+// Toggle this flag to enable/disable the logger
+const bool kEnableLogManager = kDebugMode; 
+
+void main() {
+  SuperLogManager.runApp(
+    const MyApp(),
+    config: const SuperLogConfig(
+      enabled: kEnableLogManager,
+    ),
+  );
+}
+```
+
+### Ready-made Configurations
+ 
+We provide several named constructors for common use cases:
+
+```dart
+// 🏗️ Development: All features enabled (default)
+config: const SuperLogConfig.development()
+
+// 🚀 Production: Completely disabled, zero overhead
+config: const SuperLogConfig.production()
+
+// 🐛 Error Tracking: Only captures errors, no overlay
+config: const SuperLogConfig.errorTracking()
+```
+
 ### Comprehensive Configuration
 
 Here is an example showing all available configuration options:
@@ -82,6 +118,7 @@ void main() {
       initialBubblePosition: Offset(16, 100), // Start position
       enableBubbleDrag: true,     // Allow user to drag the bubble
       hideBubbleWhenScreenOpen: true, // Hide bubble when log screen is open
+      enableLongBubbleClickExport: true, // Long press bubble to export logs
       
       // 🚨 Error Badge
       errorBadgeColor: Colors.red,     // Color of the error count badge
