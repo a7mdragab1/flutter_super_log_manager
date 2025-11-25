@@ -6,8 +6,13 @@ import '../models/log_config.dart';
 /// Draggable debug overlay bubble widget implemented as an OverlayEntry.
 class SuperDebugOverlayBubble extends StatefulWidget {
   final VoidCallback onShowLogScreen;
+  final Function(String) onShowMessage;
 
-  const SuperDebugOverlayBubble({super.key, required this.onShowLogScreen});
+  const SuperDebugOverlayBubble({
+    super.key,
+    required this.onShowLogScreen,
+    required this.onShowMessage,
+  });
 
   /// Creates an [OverlayEntry] for the debug bubble.
   ///
@@ -16,10 +21,14 @@ class SuperDebugOverlayBubble extends StatefulWidget {
   static OverlayEntry createOverlayEntry({
     required GlobalKey key,
     required VoidCallback onShowLogScreen,
+    required Function(String) onShowMessage,
   }) {
     return OverlayEntry(
-      builder: (context) =>
-          SuperDebugOverlayBubble(key: key, onShowLogScreen: onShowLogScreen),
+      builder: (context) => SuperDebugOverlayBubble(
+        key: key,
+        onShowLogScreen: onShowLogScreen,
+        onShowMessage: onShowMessage,
+      ),
     );
   }
 
@@ -142,52 +151,28 @@ class _SuperDebugOverlayBubbleState extends State<SuperDebugOverlayBubble> {
     final logs = _logManager.logs;
     if (logs.isEmpty) return;
 
-    final text = logs
-        .map(
-          (l) => '${l.timestamp} - ${l.level.name.toUpperCase()}: ${l.message}',
-        )
-        .join('\n\n');
+    try {
+      final text = logs
+          .map(
+            (l) =>
+                '${l.timestamp} - ${l.level.name.toUpperCase()}: ${l.message}',
+          )
+          .join('\n\n');
 
-    await Clipboard.setData(ClipboardData(text: text));
+      await Clipboard.setData(ClipboardData(text: text));
 
-    // Show a simple feedback since we are in an overlay
-    // We can't easily use SnackBar here without a Scaffold context in the overlay
-    // So we'll use a temporary overlay entry for feedback
-    if (mounted) {
-      _showToast(context, 'Logs exported to clipboard');
+      if (mounted) {
+        showSnackBar(context, 'Logs exported to clipboard');
+      }
+    } catch (e) {
+      if (mounted) {
+        showSnackBar(context, 'Failed to export logs: $e');
+      }
     }
   }
 
-  void _showToast(BuildContext context, String message) {
-    final overlay = Overlay.of(context);
-    final entry = OverlayEntry(
-      builder: (context) => Positioned(
-        bottom: 50,
-        left: 0,
-        right: 0,
-        child: Center(
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.black.withAlpha(204),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                message,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    overlay.insert(entry);
-    Future.delayed(const Duration(seconds: 2), () {
-      entry.remove();
-    });
+  void showSnackBar(BuildContext context, String message) {
+    widget.onShowMessage(message);
   }
 
   @override

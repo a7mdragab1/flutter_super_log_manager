@@ -80,18 +80,12 @@ _🚀 Automatic error catching • 🎯 Draggable debug bubble • 📱 Advanced
 Easily toggle the logger for production builds using a constant or environment variable:
 
 ```dart
-import 'package:flutter/foundation.dart';
 import 'package:flutter_super_log_manager/flutter_super_log_manager.dart';
 
-// Toggle this flag to enable/disable the logger
-const bool kEnableLogManager = kDebugMode; 
 
 void main() {
   SuperLogManager.runApp(
     const MyApp(),
-    config: const SuperLogConfig(
-      enabled: kEnableLogManager,
-    ),
   );
 }
 ```
@@ -180,7 +174,6 @@ void main() {
       captureDebugPrint: true,    // Capture debugPrint() calls
       capturePrint: true,         // Capture print() calls
       mirrorLogsToConsole: true,  // Also print logs to system console
-      mirrorLogsToConsole: true,  // Also print logs to system console
       
       // 📱 Log Screen UI
       panelHeightFraction: 0.9,   // Height of log screen (0.0 - 1.0)
@@ -195,6 +188,75 @@ void main() {
   );
 }
 ```
+
+### Advanced Initialization (`preRun` & `postRun`)
+
+For complex apps, you often need to initialize services (like Firebase, Hive, or Supabase) *before* the app starts. `SuperLogManager.runApp` provides `preRun` and `postRun` callbacks for this purpose.
+
+**Why use `preRun`?**
+- It runs **inside** the error-catching zone, so any initialization errors are captured by the logger.
+- It awaits your async code, ensuring everything is ready before `runApp` is called.
+- If it returns `false`, the app startup is aborted (useful for critical failures).
+
+**Why use `postRun`?**
+- It runs **after** the app widget is mounted.
+- Perfect for logging "App Started" events or triggering initial navigation.
+
+```dart
+void main() {
+  SuperLogManager.runApp(
+    const MyApp(),
+    // 1️⃣ Run async initialization code safely
+    preRun: () async {
+      try {
+        // Initialize your services here
+        await Firebase.initializeApp();
+        await Hive.initFlutter();
+        
+        // Log success
+        SuperLogManager.instance.addLog('Services initialized successfully');
+        return true; // Continue startup
+      } catch (e) {
+        // 🚨 This error will be captured by SuperLogManager!
+        throw 'Critical initialization failure: $e';
+      }
+    },
+    // 2️⃣ Run code after the app is mounted
+    postRun: () {
+      SuperLogManager.instance.addLog('App is running!');
+    },
+  );
+}
+```
+
+## 🎯 API Reference
+
+### SuperLogConfig
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | `bool` | `true` | Master switch. If false, the logger does nothing. |
+| `maxLogs` | `int` | `1000` | Maximum number of logs to keep in memory. |
+| `showOverlayBubble` | `bool` | `true` | Whether to show the floating debug bubble. |
+| `bubbleSize` | `double` | `56.0` | Diameter of the floating bubble. |
+| `bubbleColor` | `Color` | `Colors.blue` | Background color of the bubble. |
+| `bubbleIconColor` | `Color` | `Colors.white` | Color of the bug icon inside the bubble. |
+| `initialBubblePosition` | `Offset` | `Offset(16, 200)` | Starting position of the bubble. |
+| `enableBubbleDrag` | `bool` | `true` | Allow dragging the bubble around the screen. |
+| `hideBubbleWhenScreenOpen` | `bool` | `true` | Hide bubble when the log screen is active. |
+| `enableLongBubbleClickExport` | `bool` | `true` | Long press bubble to copy all logs. |
+| `errorBadgeColor` | `Color` | `Colors.red` | Background color of the error count badge. |
+| `errorBadgeTextColor` | `Color` | `Colors.white` | Text color of the error count badge. |
+| `autoDetectErrorLevel` | `bool` | `true` | Auto-detect "error" keywords in logs. |
+| `captureDebugPrint` | `bool` | `true` | Intercept `debugPrint()` calls. |
+| `capturePrint` | `bool` | `true` | Intercept `print()` calls. |
+| `mirrorLogsToConsole` | `bool` | `true` | Print captured logs to the system console. |
+| `panelHeightFraction` | `double` | `0.85` | Height of the log screen (0.0 to 1.0). |
+| `dimOverlayBackground` | `bool` | `true` | Dim the background when log screen is open. |
+| `enableLogFiltering` | `bool` | `true` | Enable UI for filtering logs by level. |
+| `enableLogSearch` | `bool` | `true` | Enable UI for searching logs. |
+| `enableLogDeletion` | `bool` | `true` | Enable UI for deleting logs. |
+| `enableLogExport` | `bool` | `true` | Enable UI for exporting logs. |
 
 ## ✨ Features
 

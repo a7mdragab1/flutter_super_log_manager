@@ -45,12 +45,47 @@ class _SuperDebugWrapperState extends State<SuperDebugWrapper> {
         children: [
           widget.child,
           if (!_isLogVisible || !hideBubbleWhenScreenOpen)
-            SuperDebugOverlayBubble(onShowLogScreen: _showLogScreen),
+            SuperDebugOverlayBubble(
+              onShowLogScreen: _showLogScreen,
+              onShowMessage: _showToast,
+            ),
           if (_isLogVisible)
             _DebugLogOverlay(onClose: _hideLogScreen, config: effectiveConfig),
+          if (_toastMessage != null)
+            Positioned(
+              bottom: 50,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withAlpha(204),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    _toastMessage!,
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
+  }
+
+  String? _toastMessage;
+  void _showToast(String message) {
+    setState(() => _toastMessage = message);
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted && _toastMessage == message) {
+        setState(() => _toastMessage = null);
+      }
+    });
   }
 }
 
