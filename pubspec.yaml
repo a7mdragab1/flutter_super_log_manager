@@ -1,6 +1,6 @@
 name: flutter_super_log_manager
 description: "A comprehensive Flutter debug logging plugin with overlay bubble, error catching, and advanced log viewer. Supports RTL/LTR, custom navigation, and performance optimizations."
-version: 1.0.0
+version: 1.0.1
 homepage: https://pub.dev/packages/flutter_super_log_manager
 repository: https://github.com/a7mdragab1/flutter_super_log_manager
 issue_tracker: https://github.com/a7mdragab1/flutter_super_log_manager/issues
