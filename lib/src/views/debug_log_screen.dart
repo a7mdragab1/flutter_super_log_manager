@@ -27,8 +27,6 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
       ValueNotifier<Set<SuperLogEntry>>(<SuperLogEntry>{});
   final ValueNotifier<bool> _isSelectionMode = ValueNotifier<bool>(false);
   final ScrollController _scrollController = ScrollController();
-  bool _autoScroll = true;
-  int _lastLogCount = 0;
 
   @override
   void initState() {
@@ -39,8 +37,6 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
     if (config?.defaultLogLevelFilter != null) {
       _logManager.setLevelFilter(config!.defaultLogLevelFilter);
     }
-    _autoScroll = true;
-    _scrollController.addListener(_handleScrollPositionChanged);
   }
 
   @override
@@ -48,15 +44,9 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
     _fontSize.dispose();
     _selectedLogs.dispose();
     _isSelectionMode.dispose();
-    _scrollController.removeListener(_handleScrollPositionChanged);
+
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _handleScrollPositionChanged() {
-    if (!_scrollController.hasClients) return;
-    final isAtTop = _scrollController.position.pixels <= 24;
-    _autoScroll = isAtTop;
   }
 
   void _toggleSelection(SuperLogEntry log) {
@@ -271,7 +261,14 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
                     theme.colorScheme.onSurface,
                 title: isSelectionMode
                     ? Text('${selectedLogs.length} selected')
-                    : const Text('Debug Logs'),
+                    : AnimatedBuilder(
+                        animation: _logManager,
+                        builder: (context, _) {
+                          return Text(
+                            'Debug Logs (${_logManager.filteredLogs.length})',
+                          );
+                        },
+                      ),
                 leading: IconButton(
                   icon: Icon(isSelectionMode ? Icons.close : Icons.arrow_back),
                   onPressed: isSelectionMode ? _clearSelection : widget.onClose,
@@ -479,18 +476,6 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
         final logs = _logManager.filteredLogs;
         final logsLength = logs.length;
 
-        if (_autoScroll && logsLength != _lastLogCount) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!_scrollController.hasClients) return;
-            _scrollController.animateTo(
-              0,
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-            );
-          });
-        }
-        _lastLogCount = logsLength;
-
         if (logsLength == 0) {
           return Center(
             child: Column(
@@ -509,47 +494,51 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
           );
         }
 
-        return ListView.separated(
-          key: const PageStorageKey('debug_logs_list'),
-          itemCount: logsLength,
-          cacheExtent: 500,
-          addAutomaticKeepAlives: false,
-          addRepaintBoundaries: true,
-          addSemanticIndexes: false,
+        return Scrollbar(
           controller: _scrollController,
-          separatorBuilder: (_, __) => Divider(
-            height: 1,
-            thickness: 0.5,
-            color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+          thumbVisibility: true,
+          child: ListView.separated(
+            key: const PageStorageKey('debug_logs_list'),
+            itemCount: logsLength,
+            cacheExtent: 500,
+            addAutomaticKeepAlives: false,
+            addRepaintBoundaries: true,
+            addSemanticIndexes: false,
+            controller: _scrollController,
+            separatorBuilder: (_, _) => Divider(
+              height: 1,
+              thickness: 0.5,
+              color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+            ),
+            itemBuilder: (context, index) {
+              // Access logs in reverse order without creating a new list
+              final log = logs[logsLength - 1 - index];
+              return _LogItemView(
+                key: ValueKey(
+                  '${log.timestamp.millisecondsSinceEpoch}_${log.message.hashCode}',
+                ),
+                log: log,
+                fontSize: _fontSize,
+                selectedLogs: _selectedLogs,
+                isSelectionMode: _isSelectionMode,
+                isDark: isDark,
+                theme: theme,
+                onTap: () {
+                  if (_isSelectionMode.value) {
+                    _toggleSelection(log);
+                  }
+                },
+                onLongPress: () => _toggleSelection(log),
+                onCopy: () {
+                  final text =
+                      '${log.timestamp} - ${log.level.name.toUpperCase()}: ${log.message}';
+                  Clipboard.setData(ClipboardData(text: text));
+                  _showSnackbar(context, 'Log entry copied');
+                },
+                onDelete: () => _deleteSingleLog(context, log),
+              );
+            },
           ),
-          itemBuilder: (context, index) {
-            // Access logs in reverse order without creating a new list
-            final log = logs[logsLength - 1 - index];
-            return _LogItemView(
-              key: ValueKey(
-                '${log.timestamp.millisecondsSinceEpoch}_${log.message.hashCode}',
-              ),
-              log: log,
-              fontSize: _fontSize,
-              selectedLogs: _selectedLogs,
-              isSelectionMode: _isSelectionMode,
-              isDark: isDark,
-              theme: theme,
-              onTap: () {
-                if (_isSelectionMode.value) {
-                  _toggleSelection(log);
-                }
-              },
-              onLongPress: () => _toggleSelection(log),
-              onCopy: () {
-                final text =
-                    '${log.timestamp} - ${log.level.name.toUpperCase()}: ${log.message}';
-                Clipboard.setData(ClipboardData(text: text));
-                _showSnackbar(context, 'Log entry copied');
-              },
-              onDelete: () => _deleteSingleLog(context, log),
-            );
-          },
         );
       },
     );

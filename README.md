@@ -7,7 +7,7 @@
 [![Platform](https://img.shields.io/badge/platform-Flutter-02569B.svg)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/dart-3.0+-00B4AB.svg)](https://dart.dev/)
 [![Flutter](https://img.shields.io/badge/flutter-3.3+-02569B.svg)](https://flutter.dev/)
-[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://github.com/your-repo/flutter_super_log_manager)
+[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://pub.dev/packages/flutter_super_log_manager)
 
 **The Ultimate Flutter Debug Logging Solution**
 
@@ -197,7 +197,7 @@ Try the plugin with our comprehensive example app:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/flutter_super_log_manager.git
+git clone https://github.com/a7mdragab1/flutter_super_log_manager.git
 cd flutter_super_log_manager
 
 # Run the example
@@ -264,7 +264,7 @@ Follow these steps to set up the project for development:
 
 ```bash
 # Fork and clone the repository
-git clone https://github.com/your-username/flutter_super_log_manager.git
+git clone https://github.com/a7mdragab1/flutter_super_log_manager.git
 cd flutter_super_log_manager
 
 # Install dependencies
@@ -290,7 +290,7 @@ cd example && flutter run
 ### Getting Help
 
 - 📖 **Documentation**: Check this README and inline code documentation
-- 🐛 **Bug Reports**: [Open an issue](https://github.com/your-repo/flutter_super_log_manager/issues)
+- 🐛 **Bug Reports**: [Open an issue](https://pub.dev/packages/flutter_super_log_manager/issues)
 - 💬 **Discussions**: Use GitHub Discussions for questions
 - 📧 **Email**: Contact maintainers for sensitive issues
 
@@ -334,8 +334,8 @@ SOFTWARE.
 
 **Built with ❤️ for the Flutter community**
 
-[⭐ Star us on GitHub](https://github.com/your-repo/flutter_super_log_manager) •
-[🐛 Report Issues](https://github.com/your-repo/flutter_super_log_manager/issues) •
-[📖 Documentation](https://github.com/your-repo/flutter_super_log_manager#readme)
+[⭐ Star us on GitHub](https://pub.dev/packages/flutter_super_log_manager) •
+[🐛 Report Issues](https://pub.dev/packages/flutter_super_log_manager/issues) •
+[📖 Documentation](https://pub.dev/packages/flutter_super_log_manager#readme)
 
 </div>

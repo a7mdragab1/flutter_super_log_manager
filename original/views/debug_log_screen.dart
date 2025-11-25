@@ -195,7 +195,7 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
                       true, // Add repaint boundaries for better performance
                   addSemanticIndexes:
                       false, // Disable semantic indexes for better performance
-                  separatorBuilder: (_, __) => Divider(
+                  separatorBuilder: (_, _) => Divider(
                     height: 1,
                     thickness: 0.5,
                     color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,

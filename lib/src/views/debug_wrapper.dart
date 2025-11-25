@@ -221,7 +221,7 @@ class _DebugLogOverlayState extends State<_DebugLogOverlay> {
           barrierColor: Colors.transparent,
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
-          pageBuilder: (context, __, ___) {
+          pageBuilder: (context, _, _) {
             return Overlay(
               initialEntries: [OverlayEntry(builder: (_) => overlayContent)],
             );
