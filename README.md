@@ -313,6 +313,14 @@ _Benchmarks performed on mid-range Android device_
 
 ## 📝 Changelog
 
+### [1.0.1] - UI Enhancements & Fixes
+
+- ✨ **Log Indexing**: Added sequential index numbers (e.g., `#1`, `#2`) to log entries for easier referencing.
+- 📅 **Improved Timestamps**: Updated timestamp format to use abbreviated month names (e.g., `Jan`, `Feb`) for better readability.
+- 🔔 **Bubble Export Feedback**: Added toast notifications when exporting logs from the debug bubble (success/failure).
+- 💾 **Persistent Settings**: Auto-scroll and Font Size preferences are now saved and restored across sessions.
+- 🛠️ **Refactoring**: Extracted `LogItemView` for better code organization and performance.
+
 ### [1.0.0] - Initial Release
 
 - 🚀 Complete debug logging system with automatic error catching
