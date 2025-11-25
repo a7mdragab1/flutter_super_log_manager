@@ -69,7 +69,6 @@ class _DebugLogOverlayState extends State<_DebugLogOverlay> {
   static const double _maxFraction = 0.95;
 
   late double _currentFraction;
-  bool _isDraggingSheet = false;
 
   @override
   void initState() {
@@ -92,26 +91,15 @@ class _DebugLogOverlayState extends State<_DebugLogOverlay> {
   }
 
   void _handleDragEnd(DragEndDetails details) {
-    setState(() {
-      _isDraggingSheet = false;
-    });
     final velocity = details.primaryVelocity ?? 0;
     if (velocity > 800 && _currentFraction <= _minFraction + 0.05) {
       widget.onClose();
     }
   }
 
-  void _handleDragStart(DragStartDetails details) {
-    setState(() {
-      _isDraggingSheet = true;
-    });
-  }
+  void _handleDragStart(DragStartDetails details) {}
 
-  void _handleDragCancel() {
-    setState(() {
-      _isDraggingSheet = false;
-    });
-  }
+  void _handleDragCancel() {}
 
   @override
   Widget build(BuildContext context) {
@@ -173,10 +161,7 @@ class _DebugLogOverlayState extends State<_DebugLogOverlay> {
                     topLeft: Radius.circular(16),
                     topRight: Radius.circular(16),
                   ),
-                  child: IgnorePointer(
-                    ignoring: _isDraggingSheet,
-                    child: SuperDebugLogScreen(onClose: widget.onClose),
-                  ),
+                  child: SuperDebugLogScreen(onClose: widget.onClose),
                 ),
               ),
             ],

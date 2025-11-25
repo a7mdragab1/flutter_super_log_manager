@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../controllers/super_log_manager.dart';
 import '../models/log_config.dart';
 import '../models/log_entry.dart';
+import 'log_item_view.dart';
 
 /// Debug log screen implemented as an OverlayEntry.
 class SuperDebugLogScreen extends StatefulWidget {
@@ -22,16 +23,24 @@ class SuperDebugLogScreen extends StatefulWidget {
 
 class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
   late final SuperLogManager _logManager;
-  final ValueNotifier<double> _fontSize = ValueNotifier<double>(16.0);
+  late final ValueNotifier<double> _fontSize;
   final ValueNotifier<Set<SuperLogEntry>> _selectedLogs =
       ValueNotifier<Set<SuperLogEntry>>(<SuperLogEntry>{});
   final ValueNotifier<bool> _isSelectionMode = ValueNotifier<bool>(false);
   final ScrollController _scrollController = ScrollController();
+  late bool _autoScroll;
+  int _lastLogCount = 0;
+
+  final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
 
   @override
   void initState() {
     super.initState();
     _logManager = SuperLogManager.instance;
+    _fontSize = ValueNotifier<double>(_logManager.fontSize);
+    _autoScroll = _logManager.autoScroll;
+
     // Apply default filter if configured
     final config = SuperLogManager.config;
     if (config?.defaultLogLevelFilter != null) {
@@ -82,8 +91,10 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
       'This action cannot be undone.',
     );
     if (confirmed == true) {
+      final count = _selectedLogs.value.length;
       _logManager.deleteLogs(_selectedLogs.value.toList());
       _clearSelection();
+      if (mounted) _showSnackbar(context, '$count logs deleted');
     }
   }
 
@@ -112,7 +123,7 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
     );
   }
 
-  Future<void> _clearAllLogs(BuildContext context) async {
+  Future<void> _clearAllLogs() async {
     final confirmed = await _showDeleteConfirmationDialog(
       context,
       'Clear all logs?',
@@ -120,10 +131,12 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
     );
     if (confirmed == true) {
       _logManager.clearLogs();
+      if (!mounted) return;
+      _showSnackbar(context, 'All logs cleared');
     }
   }
 
-  Future<void> _deleteSingleLog(BuildContext context, SuperLogEntry log) async {
+  Future<void> _deleteSingleLog(SuperLogEntry log) async {
     final confirmed = await _showDeleteConfirmationDialog(
       context,
       'Delete this log?',
@@ -131,6 +144,8 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
     );
     if (confirmed == true) {
       _logManager.deleteLog(log);
+      if (!mounted) return;
+      _showSnackbar(context, 'Log deleted');
     }
   }
 
@@ -150,19 +165,13 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
   }
 
   void _showSnackbar(BuildContext context, String message) {
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger != null) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } else {
-      // Fallback if ScaffoldMessenger is not available in the context
-      debugPrint('Snackbar: $message');
-    }
+    _scaffoldMessengerKey.currentState?.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -175,64 +184,70 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     final panelHeight = screenHeight * config.panelHeightFraction;
 
-    return Scaffold(
-      backgroundColor:
-          Colors.transparent, // Make background transparent for overlay effect
-      body: Stack(
-        children: [
-          // Dim background
-          if (config.dimOverlayBackground)
-            GestureDetector(
-              onTap: widget.onClose, // Close on background tap
-              child: Container(color: Colors.black.withValues(alpha: 0.6)),
-            ),
-          // Log panel
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              height: panelHeight,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+    return ScaffoldMessenger(
+      key: _scaffoldMessengerKey,
+      child: Scaffold(
+        backgroundColor: Colors
+            .transparent, // Make background transparent for overlay effect
+        body: Stack(
+          children: [
+            // Dim background
+            if (config.dimOverlayBackground)
+              GestureDetector(
+                onTap: widget.onClose, // Close on background tap
+                child: Container(color: Colors.black.withValues(alpha: 0.6)),
+              ),
+            // Log panel
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                height: panelHeight,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: theme.scaffoldBackgroundColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  // Handle bar
-                  Container(
-                    width: 40,
-                    height: 5,
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.grey[700] : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(2.5),
+                child: Column(
+                  children: [
+                    // Handle bar
+                    Container(
+                      width: 40,
+                      height: 5,
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.grey[700] : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2.5),
+                      ),
                     ),
-                  ),
-                  // Content
-                  Expanded(
-                    child: Column(
-                      children: [
-                        _buildAppBar(context, theme, isDark),
-                        _buildFilterBar(context, theme, isDark),
-                        Expanded(child: _buildLogList(context, theme, isDark)),
-                      ],
+                    // Content
+                    Expanded(
+                      child: Column(
+                        children: [
+                          _buildAppBar(context, theme, isDark),
+                          _buildSettingsBar(context, theme, isDark),
+                          _buildFilterBar(context, theme, isDark),
+                          Expanded(
+                            child: _buildLogList(context, theme, isDark),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -288,10 +303,6 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
     ThemeData theme,
     bool isDark,
   ) {
-    final iconColor =
-        theme.appBarTheme.iconTheme?.color ?? theme.colorScheme.onSurface;
-    final textColor =
-        theme.appBarTheme.titleTextStyle?.color ?? theme.colorScheme.onSurface;
     final config = SuperLogManager.config;
 
     return [
@@ -336,18 +347,87 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Font Size Selector
+              if (config?.enableLogDeletion ?? true)
+                IconButton(
+                  icon: const Icon(Icons.delete_sweep),
+                  onPressed: _clearAllLogs,
+                  tooltip: 'Clear All',
+                ),
+            ],
+          );
+        },
+      ),
+    ];
+  }
+
+  Widget _buildSettingsBar(BuildContext context, ThemeData theme, bool isDark) {
+    final textColor =
+        theme.appBarTheme.titleTextStyle?.color ?? theme.colorScheme.onSurface;
+    final iconColor =
+        theme.appBarTheme.iconTheme?.color ?? theme.colorScheme.onSurface;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Auto-scroll Checkbox
+          Row(
+            children: [
+              SizedBox(
+                height: 24,
+                width: 24,
+                child: Checkbox(
+                  value: _autoScroll,
+                  onChanged: (value) {
+                    setState(() {
+                      _autoScroll = value ?? false;
+                      _logManager.setAutoScroll(_autoScroll);
+                    });
+                  },
+                  fillColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return theme.colorScheme.primary;
+                    }
+                    return null;
+                  }),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Auto-scroll',
+                style: TextStyle(color: textColor, fontSize: 14),
+              ),
+            ],
+          ),
+          // Font Size Selector
+          Row(
+            children: [
+              Icon(Icons.text_fields, size: 20, color: iconColor),
+              const SizedBox(width: 8),
               ValueListenableBuilder<double>(
                 valueListenable: _fontSize,
                 builder: (context, fontSize, child) {
                   return DropdownButton<double>(
                     dropdownColor: theme.colorScheme.surface,
                     value: fontSize,
+                    isDense: true,
                     style: TextStyle(color: textColor),
-                    icon: Icon(Icons.text_fields, color: iconColor),
                     underline: Container(),
                     items:
                         [
+                              DropdownMenuItem(value: 12.0, child: Text('12')),
+                              DropdownMenuItem(value: 13.0, child: Text('13')),
+                              DropdownMenuItem(value: 14.0, child: Text('14')),
                               DropdownMenuItem(value: 15.0, child: Text('15')),
                               DropdownMenuItem(value: 16.0, child: Text('16')),
                               DropdownMenuItem(value: 17.0, child: Text('17')),
@@ -366,22 +446,19 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
                             )
                             .toList(),
                     onChanged: (val) {
-                      if (val != null) _fontSize.value = val;
+                      if (val != null) {
+                        _fontSize.value = val;
+                        _logManager.setFontSize(val);
+                      }
                     },
                   );
                 },
               ),
-              if (config?.enableLogDeletion ?? true)
-                IconButton(
-                  icon: const Icon(Icons.delete_sweep),
-                  onPressed: () => _clearAllLogs(context),
-                  tooltip: 'Clear All',
-                ),
             ],
-          );
-        },
+          ),
+        ],
       ),
-    ];
+    );
   }
 
   Widget _buildFilterBar(BuildContext context, ThemeData theme, bool isDark) {
@@ -476,6 +553,19 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
         final logs = _logManager.filteredLogs;
         final logsLength = logs.length;
 
+        if (_autoScroll && logsLength > _lastLogCount) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_scrollController.hasClients) {
+              _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          });
+        }
+        _lastLogCount = logsLength;
+
         if (logsLength == 0) {
           return Center(
             child: Column(
@@ -513,7 +603,7 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
             itemBuilder: (context, index) {
               // Access logs in reverse order without creating a new list
               final log = logs[logsLength - 1 - index];
-              return _LogItemView(
+              return LogItemView(
                 key: ValueKey(
                   '${log.timestamp.millisecondsSinceEpoch}_${log.message.hashCode}',
                 ),
@@ -535,7 +625,8 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
                   Clipboard.setData(ClipboardData(text: text));
                   _showSnackbar(context, 'Log entry copied');
                 },
-                onDelete: () => _deleteSingleLog(context, log),
+                onDelete: () => _deleteSingleLog(log),
+                index: logsLength - index,
               );
             },
           ),
@@ -555,401 +646,5 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
       case LogLevel.info:
         return isDark ? Colors.green.shade400 : Colors.green.shade700;
     }
-  }
-}
-
-// Log Item Widget
-class _LogItemView extends StatefulWidget {
-  final SuperLogEntry log;
-  final ValueNotifier<double> fontSize;
-  final ValueNotifier<Set<SuperLogEntry>> selectedLogs;
-  final ValueNotifier<bool> isSelectionMode;
-  final bool isDark;
-  final ThemeData theme;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-  final VoidCallback onCopy;
-  final VoidCallback onDelete;
-
-  const _LogItemView({
-    super.key,
-    required this.log,
-    required this.fontSize,
-    required this.selectedLogs,
-    required this.isSelectionMode,
-    required this.isDark,
-    required this.theme,
-    required this.onTap,
-    required this.onLongPress,
-    required this.onCopy,
-    required this.onDelete,
-  });
-
-  @override
-  State<_LogItemView> createState() => _LogItemViewState();
-}
-
-class _LogItemViewState extends State<_LogItemView> {
-  bool _expanded = false;
-  late final Color _textColor;
-  late final Color _tagColor;
-  late final Color _levelColor;
-
-  @override
-  void initState() {
-    super.initState();
-    _textColor = _getTextColorForLevel(widget.log.level, widget.isDark);
-    _tagColor = _getTagColorForLevel(widget.log.level, widget.isDark);
-    _levelColor = _getLevelColor(widget.log.level, widget.isDark);
-  }
-
-  Color _getTextColorForLevel(LogLevel level, bool isDark) {
-    if (isDark) {
-      switch (level) {
-        case LogLevel.error:
-          return Colors.red.shade300;
-        case LogLevel.warning:
-          return Colors.orange.shade300;
-        case LogLevel.debug:
-          return Colors.blue.shade300;
-        case LogLevel.info:
-          return Colors.grey.shade300;
-      }
-    } else {
-      switch (level) {
-        case LogLevel.error:
-          return Colors.red.shade900;
-        case LogLevel.warning:
-          return Colors.orange.shade900;
-        case LogLevel.debug:
-          return Colors.blue.shade900;
-        case LogLevel.info:
-          return Colors.grey.shade800;
-      }
-    }
-  }
-
-  Color _getTagColorForLevel(LogLevel level, bool isDark) {
-    if (isDark) {
-      switch (level) {
-        case LogLevel.error:
-          return Colors.red.shade800.withAlpha(102);
-        case LogLevel.warning:
-          return Colors.orange.shade800.withAlpha(102);
-        case LogLevel.debug:
-          return Colors.blue.shade800.withAlpha(102);
-        case LogLevel.info:
-          return Colors.grey.shade700;
-      }
-    } else {
-      switch (level) {
-        case LogLevel.error:
-          return Colors.red.shade200;
-        case LogLevel.warning:
-          return Colors.orange.shade200;
-        case LogLevel.debug:
-          return Colors.blue.shade200;
-        case LogLevel.info:
-          return Colors.grey.shade300;
-      }
-    }
-  }
-
-  Color _getLevelColor(LogLevel level, bool isDark) {
-    switch (level) {
-      case LogLevel.error:
-        return isDark ? Colors.red.shade400 : Colors.red.shade700;
-      case LogLevel.warning:
-        return isDark ? Colors.orange.shade400 : Colors.orange.shade700;
-      case LogLevel.debug:
-        return isDark ? Colors.blue.shade400 : Colors.blue.shade700;
-      case LogLevel.info:
-        return isDark ? Colors.green.shade400 : Colors.green.shade700;
-    }
-  }
-
-  Color _getCardBackgroundColor(bool isSelected, bool isDark, ThemeData theme) {
-    if (isSelected) {
-      return isDark ? Colors.blue.shade900.withAlpha(77) : Colors.blue.shade50;
-    }
-    return isDark ? const Color(0xFF1E1E1E) : Colors.white;
-  }
-
-  void _handleTap(bool isSelectionMode) {
-    if (isSelectionMode) {
-      widget.onTap();
-    } else {
-      // Toggle expand if not in selection mode
-      setState(() {
-        _expanded = !_expanded;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: widget.isSelectionMode,
-      builder: (context, isSelectionMode, child) {
-        return ValueListenableBuilder<Set<SuperLogEntry>>(
-          valueListenable: widget.selectedLogs,
-          builder: (context, selectedLogs, child) {
-            return ValueListenableBuilder<double>(
-              valueListenable: widget.fontSize,
-              builder: (context, currentFontSize, child) {
-                final isSelected = selectedLogs.contains(widget.log);
-                final bgColor = _getCardBackgroundColor(
-                  isSelected,
-                  widget.isDark,
-                  widget.theme,
-                );
-
-                return Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(13),
-                        blurRadius: 2,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => _handleTap(isSelectionMode),
-                      onLongPress: widget.onLongPress,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            left: BorderSide(color: _levelColor, width: 4),
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        if (isSelectionMode)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                              right: 8,
-                                            ),
-                                            child: Icon(
-                                              isSelected
-                                                  ? Icons.check_circle
-                                                  : Icons
-                                                        .radio_button_unchecked,
-                                              color: isSelected
-                                                  ? (widget.isDark
-                                                        ? Colors.blue.shade300
-                                                        : Colors.blue.shade700)
-                                                  : (widget.isDark
-                                                        ? Colors.grey.shade600
-                                                        : Colors.grey.shade400),
-                                              size: 20,
-                                            ),
-                                          ),
-                                        Text(
-                                          _formatTimestamp(
-                                            widget.log.timestamp,
-                                          ),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: widget.isDark
-                                                ? Colors.grey.shade500
-                                                : Colors.grey.shade600,
-                                            fontFamily: 'Courier',
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        if (widget.log.tag != null)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: _tagColor,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              widget.log.tag!,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                                color: _textColor,
-                                              ),
-                                            ),
-                                          ),
-                                        if (!isSelectionMode) ...[
-                                          const SizedBox(width: 8),
-                                          if (SuperLogManager
-                                                  .config
-                                                  ?.enableLogExport ??
-                                              true) ...[
-                                            GestureDetector(
-                                              onTap: widget.onCopy,
-                                              child: Icon(
-                                                Icons.copy,
-                                                size: 16,
-                                                color: widget.isDark
-                                                    ? Colors.grey.shade600
-                                                    : Colors.grey.shade400,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                          ],
-                                          if (SuperLogManager
-                                                  .config
-                                                  ?.enableLogDeletion ??
-                                              true)
-                                            GestureDetector(
-                                              onTap: widget.onDelete,
-                                              child: Icon(
-                                                Icons.delete_outline,
-                                                size: 16,
-                                                color: widget.isDark
-                                                    ? Colors.grey.shade600
-                                                    : Colors.grey.shade400,
-                                              ),
-                                            ),
-                                        ],
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _buildMessage(_textColor, currentFontSize),
-                                    if (widget.log.error != null) ...[
-                                      const SizedBox(height: 8),
-                                      Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: widget.isDark
-                                              ? Colors.red.shade900.withAlpha(
-                                                  51,
-                                                )
-                                              : Colors.red.shade50,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                          border: Border.all(
-                                            color: widget.isDark
-                                                ? Colors.red.shade900.withAlpha(
-                                                    128,
-                                                  )
-                                                : Colors.red.shade100,
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Error:',
-                                              style: TextStyle(
-                                                color: widget.isDark
-                                                    ? Colors.red.shade300
-                                                    : Colors.red.shade800,
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              widget.log.error.toString(),
-                                              style: TextStyle(
-                                                color: widget.isDark
-                                                    ? Colors.red.shade200
-                                                    : Colors.red.shade900,
-                                                fontSize: 12,
-                                                fontFamily: 'Courier',
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildMessage(Color textColor, double fontSize) {
-    const int maxLinesCollapsed = 3;
-    final textStyle = TextStyle(
-      color: textColor,
-      fontFamily: 'Courier', // Monospace for logs
-      fontSize: fontSize,
-      height: 1.3,
-    );
-
-    final message = widget.log.message;
-    final isShort = message.length < 150 && message.split('\n').length < 3;
-
-    if (isShort) {
-      return Text(message, style: textStyle);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          message,
-          style: textStyle,
-          maxLines: _expanded ? null : maxLinesCollapsed,
-          overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
-        ),
-        if (!_expanded)
-          Padding(
-            padding: const EdgeInsets.only(top: 4.0),
-            child: Text(
-              'Show more...',
-              style: TextStyle(
-                color: widget.isDark
-                    ? Colors.blue.shade300.withAlpha(179)
-                    : Colors.blue.shade700.withAlpha(179),
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  String _formatTimestamp(DateTime timestamp) {
-    final h = timestamp.hour.toString().padLeft(2, '0');
-    final m = timestamp.minute.toString().padLeft(2, '0');
-    final s = timestamp.second.toString().padLeft(2, '0');
-    final ms = timestamp.millisecond.toString().padLeft(3, '0');
-    return '$h:$m:$s.$ms';
   }
 }

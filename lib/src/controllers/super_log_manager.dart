@@ -437,6 +437,27 @@ class SuperLogManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  // UI State Persistence
+  bool _autoScroll = false;
+  double _fontSize = 16.0;
+
+  bool get autoScroll => _autoScroll;
+  double get fontSize => _fontSize;
+
+  void setAutoScroll(bool value) {
+    if (_autoScroll != value) {
+      _autoScroll = value;
+      notifyListeners();
+    }
+  }
+
+  void setFontSize(double value) {
+    if (_fontSize != value) {
+      _fontSize = value;
+      notifyListeners();
+    }
+  }
+
   // Caching for error count
   int _cachedErrorCount = 0;
   int? _cachedErrorCountLogsLength;

@@ -1,4 +1,0 @@
-﻿Analyzing flutter_super_log_manager...                          
-
-   info - Unnecessary use of multiple underscores - original\views\debug_log_screen.dart:198:41 - unnecessary_underscores
-
