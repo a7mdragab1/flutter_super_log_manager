@@ -53,7 +53,7 @@ _🚀 Automatic error catching • 🎯 Draggable debug bubble • 📱 Advanced
 
     ```yaml
     dependencies:
-      flutter_super_log_manager: ^1.0.0
+      flutter_super_log_manager: ^1.0.1
     ```
 
 2.  **Initialize in main.dart**
