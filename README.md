@@ -83,16 +83,50 @@ void main() {
  
 We provide several named constructors for common use cases:
 
+#### 1. Development (Default)
+Use this constructor to enable all features for debugging:
 ```dart
-// 🏗️ Development: All features enabled (default)
 config: const SuperLogConfig.development()
+```
+- **Enabled**: Yes
+- **Overlay**: Visible
+- **Features**: All enabled (print capture, debugging, etc.)
+- **Use case**: Day-to-day development and debugging.
 
-// 🚀 Production: Completely disabled, zero overhead
+#### 2. Production
+Use this constructor to completely disable the logger for release builds:
+```dart
 config: const SuperLogConfig.production()
+```
+- **Enabled**: No
+- **Overlay**: Hidden
+- **Features**: None. The logger is completely disabled and bypasses all logic.
+- **Use case**: Release builds where you want zero overhead.
 
-// 🐛 Error Tracking: Only captures errors, no overlay
+#### 3. Error Tracking
+Use this constructor to capture errors silently without the UI overlay:
+```dart
 config: const SuperLogConfig.errorTracking()
 ```
+- **Enabled**: Yes (Background only)
+- **Overlay**: Hidden
+- **Features**: Captures **only** errors and exceptions. Print capturing is disabled to reduce noise.
+- **Use case**: "Silent" monitoring. Errors are caught and stored in memory (up to 500), which you can programmatically access or export if needed, without showing the UI to the user.
+
+    **How to access logs programmatically:**
+    ```dart
+    // Get all logs
+    final logs = SuperLogManager.instance.logs;
+    
+    // Get error count
+    final errorCount = SuperLogManager.instance.errorCount;
+    
+    // Export logs manually
+    if (errorCount > 0) {
+      final errorLogs = logs.where((l) => l.level == LogLevel.error).toList();
+      // ... send to your server
+    }
+    ```
 
 ### Comprehensive Configuration
 
@@ -226,6 +260,8 @@ We welcome contributions! Here's how you can help:
 
 ### Development Setup
 
+Follow these steps to set up the project for development:
+
 ```bash
 # Fork and clone the repository
 git clone https://github.com/your-username/flutter_super_log_manager.git
@@ -265,6 +301,8 @@ cd example && flutter run
 - 🔧 **[Troubleshooting](#-troubleshooting)**: Common issues and solutions
 
 ## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details:
 
 ```text
 MIT License
