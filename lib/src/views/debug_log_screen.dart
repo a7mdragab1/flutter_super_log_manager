@@ -194,7 +194,7 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
           if (config.dimOverlayBackground)
             GestureDetector(
               onTap: widget.onClose, // Close on background tap
-              child: Container(color: Colors.black.withOpacity(0.6)),
+              child: Container(color: Colors.black.withValues(alpha: 0.6)),
             ),
           // Log panel
           Align(
@@ -210,7 +210,7 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 10,
                     offset: const Offset(0, -2),
                   ),

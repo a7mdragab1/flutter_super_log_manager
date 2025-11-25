@@ -182,7 +182,7 @@ class _SuperDebugOverlayBubbleState extends State<SuperDebugOverlayBubble> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('All log messages copied to clipboard'),
-          backgroundColor: Colors.green.withOpacity(0.9),
+          backgroundColor: Colors.green.withValues(alpha: 0.9),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -290,9 +290,10 @@ class _SuperDebugOverlayBubbleState extends State<SuperDebugOverlayBubble> {
     final newTextDirection = locale != null
         ? (locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr)
         : Directionality.of(context);
-    
+
     // Recalculate position if direction changed or position not initialized
-    final needsRecalculation = _textDirection != newTextDirection || _position.value == Offset.zero;
+    final needsRecalculation =
+        _textDirection != newTextDirection || _position.value == Offset.zero;
     _textDirection = newTextDirection;
 
     // Initialize or recalculate position based on config
@@ -355,7 +356,7 @@ class _SuperDebugOverlayBubbleState extends State<SuperDebugOverlayBubble> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),

@@ -70,13 +70,13 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
 
   Future<void> _deleteSelected() async {
     if (_selectedLogs.value.isEmpty) return;
-    
+
     final confirmed = await _showDeleteConfirmationDialog(
       context,
       'Delete ${_selectedLogs.value.length} selected log(s)?',
       'This action cannot be undone.',
     );
-    
+
     if (confirmed == true) {
       _logManager.deleteLogs(_selectedLogs.value.toList());
       _clearSelection();
@@ -100,9 +100,7 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
           ),
         ],
@@ -116,7 +114,7 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
       'Clear all logs?',
       'This will delete all logs. This action cannot be undone.',
     );
-    
+
     if (confirmed == true) {
       _logManager.clearLogs();
     }
@@ -128,7 +126,7 @@ class _SuperDebugLogScreenState extends State<SuperDebugLogScreen> {
       'Delete this log?',
       'This action cannot be undone.',
     );
-    
+
     if (confirmed == true) {
       _logManager.deleteLog(log);
     }
@@ -559,7 +557,7 @@ class _LogItemState extends State<_LogItem> {
 
                 final bgColor = isSelected
                     ? (widget.isDark
-                          ? Colors.blue.shade900.withOpacity(0.3)
+                          ? Colors.blue.shade900.withValues(alpha: 0.3)
                           : Colors.blue.shade100)
                     : _getBackgroundColorForLevel(
                         widget.log.level,
@@ -673,7 +671,9 @@ class _LogItemState extends State<_LogItem> {
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: widget.isDark
-                                          ? Colors.red.shade900.withOpacity(0.3)
+                                          ? Colors.red.shade900.withValues(
+                                              alpha: 0.3,
+                                            )
                                           : Colors.red.shade100,
                                       borderRadius: BorderRadius.circular(4),
                                     ),
@@ -767,11 +767,11 @@ class _LogItemState extends State<_LogItem> {
     if (isDark) {
       switch (level) {
         case LogLevel.error:
-          return Colors.red.shade900.withOpacity(0.2);
+          return Colors.red.shade900.withValues(alpha: 0.2);
         case LogLevel.warning:
-          return Colors.orange.shade900.withOpacity(0.2);
+          return Colors.orange.shade900.withValues(alpha: 0.2);
         case LogLevel.debug:
-          return Colors.blue.shade900.withOpacity(0.2);
+          return Colors.blue.shade900.withValues(alpha: 0.2);
         case LogLevel.info:
           return theme.colorScheme.surface;
       }
@@ -819,11 +819,11 @@ class _LogItemState extends State<_LogItem> {
     if (isDark) {
       switch (level) {
         case LogLevel.error:
-          return Colors.red.shade800.withOpacity(0.4);
+          return Colors.red.shade800.withValues(alpha: 0.4);
         case LogLevel.warning:
-          return Colors.orange.shade800.withOpacity(0.4);
+          return Colors.orange.shade800.withValues(alpha: 0.4);
         case LogLevel.debug:
-          return Colors.blue.shade800.withOpacity(0.4);
+          return Colors.blue.shade800.withValues(alpha: 0.4);
         case LogLevel.info:
           return Colors.grey.shade700;
       }
